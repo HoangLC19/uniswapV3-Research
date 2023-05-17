@@ -5,7 +5,8 @@ import IUnisapV3PoolABI from "@uniswap/v3-core/artifacts/contracts/interfaces/IU
 import { config } from "dotenv";
 config();
 
-const POOL = process.env.PoolAddress || "";
+// const POOL = "0x7858E59e0C01EA06Df3aF3D20aC7B0003275D4Bf";
+const POOL = process.env.USDT_USDC_POOL || "";
 
 export const getPoolData = async () => {
   // console.log("IUnisapV3PoolABI", IUnisapV3PoolABI.abi)

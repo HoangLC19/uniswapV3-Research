@@ -19,6 +19,7 @@ import { getPoolData } from "./pool";
 import { TransactionState, sendTransactionViaWallet } from "./provider";
 import {
   AlphaRouter,
+  ChainId,
   SwapAndAddConfig,
   SwapAndAddOptions,
   SwapToRatioResponse,
@@ -28,12 +29,18 @@ import {
 } from "@uniswap/smart-order-router";
 
 const NONFUNGIBLE_POSITION_MANAGER_ADDRESS =
-  process.env.NonfungiblePositionManager || "";
+  process.env.GOERLI_NFT_MANAGER || "";
+// const WALLET = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+// const PRIVATE_KEY =
+//   "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 const WALLET = process.env.WALLET_ADDRESS || "";
 const PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY || "";
-const TETHER = process.env.Tether || "";
-const USDC = process.env.UsdCoin || "";
-const ROUTER = process.env.SwapRouter || "";
+// const TETHER = process.env.MAINNET_USDT || "";
+// const USDC = process.env.MAINNET_USDC || "";
+const TETHER = process.env.GOERLI_USDT || "";
+const USDC = process.env.GOERLI_USDC || "";
+const ROUTER = process.env.GOERLI_SWAP_ROUTER || "";
+const ROUTER_V3 = process.env.GOERLI_SWAP_ROUTER_02;
 
 export interface PositionInfo {
   tickLower: number;
@@ -44,10 +51,19 @@ export interface PositionInfo {
   tokensOwed0: BigNumber;
   tokensOwed1: BigNumber;
 }
-const tokenA = new Token(11155111, TETHER, 18, "USDT", "Tether");
-const tokenB = new Token(11155111, USDC, 18, "USDC", "USDCoin");
+// const tokenA = new Token(ChainId.MAINNET, TETHER, 6, "USDT", "Tether USD");
+// const tokenB = new Token(ChainId.MAINNET, USDC, 6, "USDC", "USD Coin");
+
+const tokenA = new Token(ChainId.GÖRLI, TETHER, 18, "USDT", "Tether USD");
+const tokenB = new Token(ChainId.GÖRLI, USDC, 18, "USDC", "USD Coin");
 
 export const swapAndAddLiquidity = async (positionId: number) => {
+  // const wallet = new Wallet(PRIVATE_KEY, ethers.provider);
+  const [owner] = await ethers.getSigners();
+  // const wallet = new Wallet(
+  //   "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+  //   ethers.provider
+  // );
   const wallet = new Wallet(PRIVATE_KEY, ethers.provider);
   const provider = ethers.provider;
 
@@ -55,42 +71,51 @@ export const swapAndAddLiquidity = async (positionId: number) => {
     return TransactionState.Failed;
   }
 
+  // const router = new AlphaRouter({
+  //   chainId: ChainId.MAINNET,
+  //   provider: provider,
+  // });
+
   const router = new AlphaRouter({
-    chainId: 11155111,
+    chainId: ChainId.GÖRLI,
     provider: provider,
   });
 
   const tokenACurrencyAmount = CurrencyAmount.fromRawAmount(
     tokenA,
-    fromReadableAmount(100, tokenA.decimals)
+    fromReadableAmount(10, tokenA.decimals)
   );
 
   const tokenBCurrencyAmount = CurrencyAmount.fromRawAmount(
     tokenB,
-    fromReadableAmount(100, tokenB.decimals)
+    fromReadableAmount(10, tokenB.decimals)
   );
 
   const currentPosition = await constructPositionWithPlaceholderLiquidity(
     tokenA,
     tokenB
   );
-``
+
+  // console.log("currentPosition", currentPosition);
+  ``;
   const swapAndConfig: SwapAndAddConfig = {
     ratioErrorTolerance: new Fraction("1", "10000"),
     maxIterations: 6,
   };
+  // console.log("swapAndConfig", swapAndConfig);
 
   const swapAndOptions: SwapAndAddOptions = {
     swapOptions: {
       type: SwapType.SWAP_ROUTER_02,
       recipient: WALLET,
       slippageTolerance: new Percent("50", "10000"),
-      deadline: 60 * 20,
+      deadline: Math.floor(Date.now() / 1000) + 60 * 20,
     },
     addLiquidityOptions: {
       tokenId: positionId,
     },
   };
+  // console.log("swapAndOptions", swapAndOptions);
 
   const routeToRatioResponse: SwapToRatioResponse = await router.routeToRatio(
     tokenACurrencyAmount,
@@ -100,6 +125,8 @@ export const swapAndAddLiquidity = async (positionId: number) => {
     swapAndOptions
   );
 
+  // console.log("routeToRatioResponse", routeToRatioResponse);
+
   if (
     !routeToRatioResponse ||
     routeToRatioResponse.status !== SwapToRatioStatus.SUCCESS
@@ -108,9 +135,15 @@ export const swapAndAddLiquidity = async (positionId: number) => {
 
   const route: SwapToRatioRoute = routeToRatioResponse.result;
 
+  // console.log("route: ", route);
+  console.log("swap routes:", route.trade.swaps);
+  console.log("swap path:"  , route.trade.swaps[0].route.path);
+  console.log("route", route.trade.routes);
+  console.log("route", route.trade.routes[0].path);
+
   const transaction = {
     data: route.methodParameters?.calldata,
-    to: ROUTER,
+    to: ROUTER_V3,
     value: route.methodParameters?.value,
     from: WALLET,
   };
@@ -120,9 +153,15 @@ export const swapAndAddLiquidity = async (positionId: number) => {
 
 export const mintPositions = async () => {
   const provider = ethers.provider;
-  const wallet = new Wallet(PRIVATE_KEY, provider);
-  const tokenA = new Token(11155111, TETHER, 18, "USDT", "Tether");
-  const tokenB = new Token(11155111, USDC, 18, "USDC", "USDCoin");
+  // const wallet = new Wallet(
+  //   "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+  //   provider
+  // );
+  const wallet = new Wallet(PRIVATE_KEY, ethers.provider);
+  // const tokenA = new Token(ChainId.MAINNET, TETHER, 6, "USDT", "Tether USD");
+  // const tokenB = new Token(ChainId.MAINNET, USDC, 6, "USDC", "USD Coin");
+  const tokenA = new Token(ChainId.GÖRLI, TETHER, 18, "USDT", "Tether USD");
+  const tokenB = new Token(ChainId.GÖRLI, USDC, 18, "USDC", "USD Coin");
 
   const positionToMint = await constructPosition(
     CurrencyAmount.fromRawAmount(
@@ -151,8 +190,8 @@ export const mintPositions = async () => {
     to: NONFUNGIBLE_POSITION_MANAGER_ADDRESS,
     value: value,
     from: WALLET,
-    maxFeePerGas: 1000000000,
-    maxPriorityFeePerGas: 1000000000,
+    maxFeePerGas: 166333286930,
+    maxPriorityFeePerGas: 166333286930,
   };
 
   const txRes = await sendTransactionViaWallet(wallet, transaction);
@@ -164,7 +203,10 @@ export const mintPositions = async () => {
 
 export const addLiquidity = async (PositionId: number) => {
   const provider = ethers.provider;
-  const wallet = new Wallet(PRIVATE_KEY, provider);
+  const wallet = new Wallet(
+    "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+    provider
+  );
 
   const positionToIncreaseBy = await constructPosition(
     CurrencyAmount.fromRawAmount(
@@ -202,7 +244,10 @@ export const addLiquidity = async (PositionId: number) => {
 
 export const removeLiquidity = async (PositionId: number) => {
   const provider = ethers.provider;
-  const address = new Wallet(PRIVATE_KEY, provider);
+  const address = new Wallet(
+    "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+    provider
+  );
 
   const currentPosition = await constructPosition(
     CurrencyAmount.fromRawAmount(tokenA, fromReadableAmount(50, 18)),

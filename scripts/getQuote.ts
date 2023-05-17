@@ -9,14 +9,9 @@ import { fromReadableAmount, toReadableAmount } from "./lib/conversion";
 import { config } from "dotenv";
 config();
 
-const FACTORY = process.env.UniswapV3Factory || "";
-const TETHER = process.env.Tether || "";
-const USDC = process.env.UsdCoin || "";
-const pool = process.env.PoolAddress || "";
-const QUOTER = process.env.QuoterV2 || "";
 
-const tokenA = new Token(11155111, TETHER, 18, "USDT", "Tether");
-const tokenB = new Token(11155111, USDC, 18, "USDC", "USDCoin");
+const pool = process.env.USDT_USDC_POOL || "";
+const QUOTER = process.env.GOERLI_QUOTER || "";
 
 const getPoolData = async (poolAddress: Contract) => {
   const [token0, token1, fee] = await Promise.all([
@@ -33,13 +28,6 @@ const getPoolData = async (poolAddress: Contract) => {
 };
 
 const main = async () => {
-  const currentPoolAddress = computePoolAddress({
-    factoryAddress: FACTORY,
-    tokenA: tokenA,
-    tokenB: tokenB,
-    fee: 500,
-  });
-
   const poolContract = new Contract(
     pool,
     IUnisapV3PoolABI.abi,

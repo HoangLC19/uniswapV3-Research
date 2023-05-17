@@ -6,7 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "run:sepolia": "hardhat run --network sepolia",
-    "run:arbitrum": "hardhat run --network arbitrum"
+    "run:arbitrum": "hardhat run --network arbitrum",
+    "run:goerli": "hardhat run --network goerli",
+    "run:mainnet": "hardhat run --network hardhat"
   },
   "keywords": [],
   "author": "",

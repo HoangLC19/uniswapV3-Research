@@ -24,6 +24,7 @@ export const sendTransactionViaWallet = async (
     return TransactionState.Failed;
   }
 
+  
   while (receipt === null) {
     try {
       receipt = await provider.getTransactionReceipt(txRes.hash);

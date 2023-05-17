@@ -24,10 +24,10 @@ config();
 
 import { getPoolData } from "./lib/pool";
 
-const TETHER = process.env.Tether || "";
-const USDC = process.env.UsdCoin || "";
-const QUOTER = process.env.QuoterV2 || "";
-const ROUTER = process.env.SwapRouter || "";
+const TETHER = process.env.GOERLI_USDT || "";
+const USDC = process.env.GOERLI_USDC || "";
+const QUOTER = process.env.GOERLI_QUOTER || "";
+const ROUTER = process.env.GOERLI_SWAP_ROUTER || "";
 const WALLET = process.env.WALLET_ADDRESS || "";
 const PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY || "";
 
@@ -35,8 +35,8 @@ const tetherContract = new Contract(TETHER, Tether.abi, ethers.provider);
 const usdcContract = new Contract(USDC, UsdCoin.abi, ethers.provider);
 const wallet = new ethers.Wallet(PRIVATE_KEY, ethers.provider);
 
-const tokenA = new Token(11155111, TETHER, 18, "USDT", "Tether");
-const tokenB = new Token(11155111, USDC, 18, "USDC", "USDCoin");
+const tokenA = new Token(5, TETHER, 18, "USDT", "Tether");
+const tokenB = new Token(5, USDC, 18, "USDC", "USDCoin");
 
 const getOutputQuote = async (
   route: Route<Currency, Currency>,
@@ -82,7 +82,7 @@ const main = async () => {
   );
 
   const swapRoute = new Route([pool], tokenA, tokenB);
-// 
+  //
   console.log("swapRoute", swapRoute);
 
   const amountOut = await getOutputQuote(swapRoute, tokenA, 5);
@@ -114,7 +114,7 @@ const main = async () => {
   // log the balances before the swap
   const [usdt, usdc] = await Promise.all([
     tetherContract.balanceOf(WALLET),
-    usdcContract.balanceOf(ROUTER),
+    usdcContract.balanceOf(WALLET),
   ]);
 
   console.log("usdt balance before Swap", toReadableAmount(usdt, 18));
@@ -125,7 +125,7 @@ const main = async () => {
     options
   );
 
-  console.log("methodParameters", methodParameters)
+  console.log("methodParameters", methodParameters);
 
   const tx = {
     data: methodParameters.calldata,
@@ -143,7 +143,7 @@ const main = async () => {
   // log the balances after the swap
   const [usdtAfter, usdcAfter] = await Promise.all([
     tetherContract.balanceOf(WALLET),
-    usdcContract.balanceOf(ROUTER),
+    usdcContract.balanceOf(WALLET),
   ]);
 
   console.log("usdt balance after Swap", toReadableAmount(usdtAfter, 18));

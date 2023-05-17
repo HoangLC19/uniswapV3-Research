@@ -13,37 +13,37 @@ import {
 } from "./lib/liquidity";
 config();
 
-const TETHER = process.env.Tether || "";
-const USDC = process.env.UsdCoin || "";
-const NFT_MANAGER = process.env.NonfungiblePositionManager || "";
+const TETHER = process.env.GOERLI_USDT || "";
+const USDC = process.env.GOERLI_USDC || "";
+const NFT_MANAGER = process.env.GOERLI_NFT_MANAGER || "";
 const WALLET = process.env.WALLET_ADDRESS || "";
 const PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY || "";
 
 const tetherContract = new Contract(TETHER, Tether.abi, ethers.provider);
+const usdcContract = new Contract(USDC, UsdCoin.abi, ethers.provider);
 const wallet = new ethers.Wallet(PRIVATE_KEY, ethers.provider);
 
 const main = async () => {
   // mint usdt for owner
   console.log("minted 100 USDT for owner");
   const amount = utils.parseUnits("100", 18);
-  // await tetherContract.connect(wallet).mint(WALLET, amount);
-  // console.log(
-  //   `owner usdt balance ${toReadableAmount(
-  //     await tetherContract.balanceOf(WALLET),
-  //     18
-  //   )}`
-  // );
+  await tetherContract.connect(wallet).mint(WALLET, amount);
+  console.log(
+    `owner usdt balance ${toReadableAmount(
+      await tetherContract.balanceOf(WALLET),
+      18
+    )}`
+  );
 
   // mint usdc for owner
   console.log("minted 100 USDC for owner");
-  const usdcContract = new Contract(USDC, UsdCoin.abi, ethers.provider);
-  // await usdcContract.connect(wallet).mint(WALLET, amount);
-  // console.log(
-  //   `owner usdc balance ${toReadableAmount(
-  //     await usdcContract.balanceOf(WALLET),
-  //     18
-  //   )}`
-  // );
+  await usdcContract.connect(wallet).mint(WALLET, amount);
+  console.log(
+    `owner usdc balance ${toReadableAmount(
+      await usdcContract.balanceOf(WALLET),
+      18
+    )}`
+  );
 
   // approve usdt for nft manager
   await tetherContract.connect(wallet).approve(NFT_MANAGER, amount);
@@ -51,9 +51,6 @@ const main = async () => {
   // approve usdc for nft manager
   await usdcContract.connect(wallet).approve(NFT_MANAGER, amount);
 
-  // const receipt = await mintPositions();
-
-  // console.log("receipt", receipt);
 
   const tokenIds: number[] = await getPositionId();
   const poolData = await getPoolData();
@@ -76,11 +73,11 @@ const main = async () => {
   );
   console.log(
     "owner usdc balance before adding liquidity",
-    toReadableAmount(await tetherContract.balanceOf(WALLET), 18)
+    toReadableAmount(await usdcContract.balanceOf(WALLET), 18)
   );
 
   // //add liquidity
-  const addLiquidityReceipt = await addLiquidity(tokenIds[2]);
+  const addLiquidityReceipt = await addLiquidity(tokenIds[0]);
   console.log("addLiquidityReceipt", addLiquidityReceipt);
 
   // console tether and usdc balances after adding liquidity
@@ -90,22 +87,8 @@ const main = async () => {
   );
   console.log(
     "owner usdc balance after adding liquidity",
-    toReadableAmount(await tetherContract.balanceOf(WALLET), 18)
+    toReadableAmount(await usdcContract.balanceOf(WALLET), 18)
   );
-
-  //remove liquidity
-  // const removeLiquidityReceipt = await removeLiquidity(tokenIds[2]);
-  // console.log("removeLiquidityReceipt", removeLiquidityReceipt);
-
-  // // console tether and usdc balances after removing liquidity
-  // console.log(
-  //   "owner usdt balance after removing liquidity",
-  //   toReadableAmount(await tetherContract.balanceOf(WALLET), 18)
-  // );
-  // console.log(
-  //   "owner usdc balance after removing liquidity",
-  //   toReadableAmount(await tetherContract.balanceOf(WALLET), 18)
-  // );
 };
 
 main()

@@ -1,7 +1,5 @@
 import { ethers } from "hardhat";
 import { Contract, utils } from "ethers";
-import { Currency, Token, CurrencyAmount, TradeType } from "@uniswap/sdk-core";
-import { Route, SwapQuoter } from "@uniswap/v3-sdk";
 import { config } from "dotenv";
 import Tether from "../artifacts/contracts/Tether.sol/Tether.json";
 import UsdCoin from "../artifacts/contracts/UsdCoin.sol/UsdCoin.json";
@@ -10,18 +8,17 @@ import {
   getPositionId,
   PositionInfo,
   getPositionInfo,
-  addLiquidity,
   swapAndAddLiquidity,
 } from "./lib/liquidity";
 config();
 
 import { getPoolData } from "./lib/pool";
 
-const TETHER = process.env.Tether || "";
-const USDC = process.env.UsdCoin || "";
-const QUOTER = process.env.QuoterV2 || "";
+const TETHER = process.env.GOERLI_USDT || "";
+const USDC = process.env.GOERLI_USDC || "";
 const WALLET = process.env.WALLET_ADDRESS || "";
-const NFT_MANAGER = process.env.NonfungiblePositionManager || "";
+const NFT_MANAGER = process.env.GOERLI_NFT_MANAGER || "";
+const ROUTER_V3 = process.env.GOERLI_SWAP_ROUTER_02 || "";
 const PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY || "";
 
 const tetherContract = new Contract(TETHER, Tether.abi, ethers.provider);
@@ -31,23 +28,23 @@ const wallet = new ethers.Wallet(PRIVATE_KEY, ethers.provider);
 const main = async () => {
   const amount = utils.parseEther("100");
 
+  // mint tokens
+  await tetherContract.connect(wallet).mint(wallet.address, amount);
+  await usdcContract.connect(wallet).mint(wallet.address, amount);
+
   //approve tokens for nft manager
-  await tetherContract.connect(wallet).approve(NFT_MANAGER, amount);
-  await usdcContract.connect(wallet).approve(NFT_MANAGER, amount);
+  await tetherContract.connect(wallet).approve(ROUTER_V3, amount);
+  await usdcContract.connect(wallet).approve(ROUTER_V3, amount);
 
   const tokenIds: number[] = await getPositionId();
   const poolData = await getPoolData();
-  console.log("poolData", poolData);
+  // console.log("poolData", poolData);
 
-  console.log("tokenIds", tokenIds);
+  const positionIds = await getPositionId();
 
-  let positionInfo: PositionInfo[] = [];
-  for (let i = 0; i < tokenIds.length; i++) {
-    const info = await getPositionInfo(tokenIds[i]);
-    positionInfo.push(info);
-  }
+  // console.log("tokenId", tokenIds);
 
-  console.log("positionInfo", positionInfo);
+  // console.log("positionInfo", positionIds);
 
   // log balances before adding liquidity
   console.log(
@@ -56,11 +53,11 @@ const main = async () => {
   );
   console.log(
     "owner usdc balance before adding liquidity",
-    toReadableAmount(await tetherContract.balanceOf(WALLET), 18)
+    toReadableAmount(await usdcContract.balanceOf(WALLET), 18)
   );
 
   // swap and add liquidity
-  const swapAndAddLiquidityResult = await swapAndAddLiquidity(tokenIds[2]);
+  const swapAndAddLiquidityResult = await swapAndAddLiquidity(tokenIds[0]);
 
   console.log("swapAndAddLiquidityResult", swapAndAddLiquidityResult);
 
@@ -71,7 +68,7 @@ const main = async () => {
   );
   console.log(
     "owner usdc balance after adding liquidity",
-    toReadableAmount(await tetherContract.balanceOf(WALLET), 18)
+    toReadableAmount(await usdcContract.balanceOf(WALLET), 18)
   );
 };
 

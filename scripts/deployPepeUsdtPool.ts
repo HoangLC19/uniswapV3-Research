@@ -9,12 +9,12 @@ const artifacts = {
   NonfungiblePositionManager: require("@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json"),
 };
 
-const TETHER_ADDRESS = process.env.MAINNET_USDT || "";
-const USDC_ADDRESS = process.env.MAINNET_USDC || "";
+const TETHER_ADDRESS = process.env.USDT || "";
+const USDC_ADDRESS = process.env.PEPE || "";
 
 // Uniswap contract address
-const FACTORY_ADDRESS = process.env.GOERLI_FACTORY || "";
-const POSITION_MANAGER_ADDRESS = process.env.GOERLI_NFT_MANAGER || "";
+const FACTORY_ADDRESS = process.env.FACTORY || "";
+const POSITION_MANAGER_ADDRESS = process.env.NFT_MANAGER || "";
 
 const encodePriceSqrt = (reserve1: number, reserve0: number) => {
   return BigNumber.from(
@@ -41,30 +41,23 @@ const factory = new Contract(
 
 const deployPool = async (token0: any, token1: any, fee: any, price: any) => {
   const [owner] = await ethers.getSigners();
-  // reverse token0 and token1 if token0 is larger than token1
-  if (token0 > token1) {
-    const temp = token0;
-    token0 = token1;
-    token1 = temp;
-  }
-  const tx = await nonfungiblePositionManager
+  await nonfungiblePositionManager
     .connect(owner)
     .createAndInitializePoolIfNecessary(token0, token1, fee, price, {
       gasLimit: 5000000,
     });
-  await tx.wait();
   const poolAddress = await factory.getPool(token0, token1, fee);
   return poolAddress;
 };
 
 const main = async () => {
-  const usdtUsdc500 = await deployPool(
+  const usdtPepe500 = await deployPool(
     TETHER_ADDRESS,
     USDC_ADDRESS,
     500,
-    encodePriceSqrt(1, 1)
+    encodePriceSqrt(2, 1)
   );
-  console.log("USDT/USDC 500: ", usdtUsdc500);
+  console.log("USDT/PEPE 500: ", usdtPepe500);
 
   const poolAddress = await factory.getPool(TETHER_ADDRESS, USDC_ADDRESS, 500);
   console.log("poolAddress", poolAddress);
